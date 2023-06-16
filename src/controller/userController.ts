@@ -44,6 +44,53 @@ const userRegistration = async (req,res) => {
     }
 }
 
+const getUser = async (req,res) => {
+  
+    try {
+        const cookie = req.cookies['userReg']
+        const  claims = jwt.verify(cookie,"secret")
+        if(!claims){
+            return res.status(401).send({
+                message:"unauthenticated"
+            })
+        }
+        const user = await User.findOne({_id:claims._id})
+        const {password,...data} = await user.toJSON()
+        res.send(data)
+
+    } catch (error) {
+        console.log("anything here");
+        
+        return res.status(401).send({
+            message:'unauthenticated'
+        })
+        
+    }
+    
+}
+
+const login = async(req,res) =>{
+    const user = await User.findOne({email:req.body.email})
+    if(!user){
+        return res.status(404).send({ message:'user not found' })
+    }
+    if(!(await bcrypt.compare(req.body.password,user.password))){
+        return res.status(400).send({ message:"Password is incorrect"})
+    }
+    const token = jwt.sign({_id:user._id},"secret")
+    res.cookie("userReg",token,{httpOnly:true,maxAge:24*60*60*100})
+    res.send({message:"success" })
+}
+
+const logout = async (req,res) =>{
+    res.cookie("userReg","",{maxAge:0})
+    res.send({
+        message:"success"
+    })
+
+}
+
 module.exports = {
-    userRegistration
+    userRegistration,
+    getUser,logout,login
 }
