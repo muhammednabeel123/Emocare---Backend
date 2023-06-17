@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -18,10 +19,16 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../model/userModel');
-const userRegistration = (req, res) => __awaiter(this, void 0, void 0, function* () {
+const Token = require('../model/tokenModel');
+const SendEmail = require("../utilities/sendmail");
+const cryptos = require("crypto");
+const dotenv = require("dotenv");
+dotenv.config();
+const userRegistration = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let email = req.body.email;
         let password = req.body.password;
@@ -41,23 +48,52 @@ const userRegistration = (req, res) => __awaiter(this, void 0, void 0, function*
                 password: hashedPassword
             });
             const result = yield user.save();
-            // jwt token
+            const emailtoken = yield new Token({ userId: result._id,
+                token: cryptos.randomBytes(32).toString("hex") }).save();
+            const url = `${process.env.BASE_URL}user/${user._id}/verify/${emailtoken.token}`;
+            yield SendEmail(user.email, "verify email", url);
             const { _id } = yield result.toJSON();
             const token = jwt.sign({ _id: _id }, "secret");
             res.cookie("userReg", token, {
                 httpOnly: true,
                 maxAge: 24 * 60 * 60 * 1000
             });
-            res.send({
-                message: "success"
+            res.status(201).send({
+                message: "mail sented",
+                token: emailtoken.token,
+                userId: user._id
             });
+            // jwt token
+            // res.send({
+            //     message:"success"
+            // })  
         }
     }
     catch (error) {
         console.log(error);
     }
 });
-const getUser = (req, res) => __awaiter(this, void 0, void 0, function* () {
+const mailVerify = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = yield User.findOne({ _id: req.params.id });
+        console.log(user, "ther");
+        if (!user)
+            return res.status(404).send({ message: "Invalid link" });
+        const token = yield Token.findOne({
+            userId: user._id,
+            token: req.params.token
+        });
+        if (!token)
+            return res.status(400).send({ message: "invalid link" });
+        yield User.updateOne({ _id: user._id }, { $set: { verified: true } });
+        yield Token.deleteOne({ token: req.params.token });
+        res.redirect(process.env.BASE_URL2);
+    }
+    catch (error) {
+        res.status(500).send({ message: "Internals Server Error" });
+    }
+});
+const getUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const cookie = req.cookies['userReg'];
         const claims = jwt.verify(cookie, "secret");
@@ -77,7 +113,7 @@ const getUser = (req, res) => __awaiter(this, void 0, void 0, function* () {
         });
     }
 });
-const login = (req, res) => __awaiter(this, void 0, void 0, function* () {
+const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield User.findOne({ email: req.body.email });
     if (!user) {
         return res.status(404).send({ message: 'user not found' });
@@ -89,7 +125,7 @@ const login = (req, res) => __awaiter(this, void 0, void 0, function* () {
     res.cookie("userReg", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 100 });
     res.send({ message: "success" });
 });
-const logout = (req, res) => __awaiter(this, void 0, void 0, function* () {
+const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.cookie("userReg", "", { maxAge: 0 });
     res.send({
         message: "success"
@@ -97,5 +133,5 @@ const logout = (req, res) => __awaiter(this, void 0, void 0, function* () {
 });
 module.exports = {
     userRegistration,
-    getUser, logout, login
+    getUser, logout, login, mailVerify
 };

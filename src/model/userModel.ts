@@ -13,6 +13,12 @@ const userSchema = new mongoos.Schema({
     password:{
         type:String,
         required:true
+    },
+    verfied:{
+       type:Boolean
+    },
+    is_blocked:{
+        type:Boolean
     }
 
 })

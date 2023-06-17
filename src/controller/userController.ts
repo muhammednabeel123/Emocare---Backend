@@ -1,6 +1,11 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../model/userModel')
+const Token = require('../model/tokenModel')
+const SendEmail = require("../utilities/sendmail")
+const cryptos = require("crypto")
+import * as dotenv from "dotenv";
+dotenv.config();
 
 const userRegistration = async (req,res) => {
     try {
@@ -23,17 +28,28 @@ const userRegistration = async (req,res) => {
             })
             
             const result = await user.save()
+            const emailtoken = await new Token({ userId:result._id,
+                token:cryptos.randomBytes(32).toString("hex") }).save()
+                const url = `${process.env.BASE_URL}user/${user._id}/verify/${emailtoken.token}`
+                await SendEmail(user.email,"verify email",url)
+                const {_id} = await result.toJSON()
+                const token = jwt.sign({_id:_id},"secret")
+                res.cookie("userReg",token,{
+                    httpOnly:true,
+                    maxAge:24*60*60*1000
+                })
+                res.status(201).send({
+                    message: "mail sented",
+                    token: emailtoken.token,
+                    userId: user._id
+                  });
+                  
             // jwt token
-            const {_id} = await result.toJSON()
-            const token = jwt.sign({_id:_id},"secret")
-            res.cookie("userReg",token,{
-                httpOnly:true,
-                maxAge:24*60*60*1000
-            })
+          
     
-            res.send({
-                message:"success"
-            })  
+            // res.send({
+            //     message:"success"
+            // })  
         }
 
        
@@ -43,6 +59,29 @@ const userRegistration = async (req,res) => {
         
     }
 }
+
+const mailVerify = async (req,res) =>{
+    try {
+        const user = await User.findOne({_id:req.params.id});
+        console.log(user,"ther");
+        
+        if(!user) return res.status(404).send({message:"Invalid link"})
+        const token = await Token.findOne({
+            userId:user._id,
+            token:req.params.token
+        })
+        if(!token)return res.status(400).send({message:"invalid link"})
+        await User.updateOne({_id:user._id},{$set:{verified:true}})
+        await Token.deleteOne({token:req.params.token})
+        
+        
+        res.redirect(process.env.BASE_URL2);
+       
+
+    } catch (error) {
+        res.status(500).send({message:"Internals Server Error"})
+    }
+} 
 
 const getUser = async (req,res) => {
   
@@ -92,5 +131,5 @@ const logout = async (req,res) =>{
 
 module.exports = {
     userRegistration,
-    getUser,logout,login
+    getUser,logout,login,mailVerify
 }
