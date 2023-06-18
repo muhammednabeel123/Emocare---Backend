@@ -30,7 +30,7 @@ const userRegistration = async (req,res) => {
             const result = await user.save()
             const emailtoken = await new Token({ userId:result._id,
                 token:cryptos.randomBytes(32).toString("hex") }).save()
-                const url = `${process.env.BASE_URL}user/${user._id}/verify/${emailtoken.token}`
+                const url = `${process.env.BASE_URL2}user/${user._id}/verify/${emailtoken.token}`
                 await SendEmail(user.email,"verify email",url)
                 const {_id} = await result.toJSON()
                 const token = jwt.sign({_id:_id},"secret")
@@ -73,9 +73,10 @@ const mailVerify = async (req,res) =>{
         if(!token)return res.status(400).send({message:"invalid link"})
         await User.updateOne({_id:user._id},{$set:{verified:true}})
         await Token.deleteOne({token:req.params.token})
+    
         
         
-        res.redirect(process.env.BASE_URL2);
+        res.status(200).send({message:'Verification successful'})
        
 
     } catch (error) {

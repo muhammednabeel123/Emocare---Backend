@@ -50,7 +50,7 @@ const userRegistration = (req, res) => __awaiter(void 0, void 0, void 0, functio
             const result = yield user.save();
             const emailtoken = yield new Token({ userId: result._id,
                 token: cryptos.randomBytes(32).toString("hex") }).save();
-            const url = `${process.env.BASE_URL}user/${user._id}/verify/${emailtoken.token}`;
+            const url = `${process.env.BASE_URL2}user/${user._id}/verify/${emailtoken.token}`;
             yield SendEmail(user.email, "verify email", url);
             const { _id } = yield result.toJSON();
             const token = jwt.sign({ _id: _id }, "secret");
@@ -87,7 +87,7 @@ const mailVerify = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             return res.status(400).send({ message: "invalid link" });
         yield User.updateOne({ _id: user._id }, { $set: { verified: true } });
         yield Token.deleteOne({ token: req.params.token });
-        res.redirect(process.env.BASE_URL2);
+        res.status(200).send({ message: 'Verification successful' });
     }
     catch (error) {
         res.status(500).send({ message: "Internals Server Error" });
