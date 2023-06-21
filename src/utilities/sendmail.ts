@@ -5,9 +5,7 @@ dotenv.config();
 
 
 const Sendmail = async (email,subject,text) =>{
-    try {
-        console.log(process.env.HOST as String,"name");
-        
+    try {       
         const transporter = nodemailer.createTransport({
             host:process.env.HOST,
             service:process.env.SERVICE,

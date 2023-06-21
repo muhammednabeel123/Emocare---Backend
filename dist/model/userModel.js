@@ -13,7 +13,7 @@ const userSchema = new mongoos.Schema({
         type: String,
         required: true
     },
-    verified: {
+    verfied: {
         type: Boolean
     },
     is_blocked: {

@@ -14,7 +14,6 @@ const dotenv = require("dotenv");
 dotenv.config();
 const Sendmail = (email, subject, text) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log(process.env.HOST, "name");
         const transporter = nodemailer.createTransport({
             host: process.env.HOST,
             service: process.env.SERVICE,

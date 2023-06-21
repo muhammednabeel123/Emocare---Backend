@@ -48,16 +48,13 @@ const userRegistration = (req, res) => __awaiter(void 0, void 0, void 0, functio
                 password: hashedPassword
             });
             const result = yield user.save();
-            const emailtoken = yield new Token({ userId: result._id,
-                token: cryptos.randomBytes(32).toString("hex") }).save();
+            const emailtoken = yield new Token({
+                userId: result._id,
+                token: cryptos.randomBytes(32).toString("hex")
+            }).save();
             const url = `${process.env.BASE_URL2}user/${user._id}/verify/${emailtoken.token}`;
             yield SendEmail(user.email, "verify email", url);
             const { _id } = yield result.toJSON();
-            const token = jwt.sign({ _id: _id }, "secret");
-            res.cookie("userReg", token, {
-                httpOnly: true,
-                maxAge: 24 * 60 * 60 * 1000
-            });
             res.status(201).send({
                 message: "mail sented",
                 token: emailtoken.token,
@@ -75,10 +72,16 @@ const userRegistration = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 const mailVerify = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = yield User.findOne({ _id: req.params.id });
-        console.log(user, "ther");
+        const user = yield User.findOne({ _id: req.params._id });
+        console.log(user._id, "ther");
         if (!user)
             return res.status(404).send({ message: "Invalid link" });
+        const tokens = jwt.sign({ _id: req.params._id }, "secret");
+        res.cookie("userRegi", tokens, {
+            httpOnly: true,
+            maxAge: 24 * 60 * 60 * 1000
+        });
+        console.log(tokens, "this is token");
         const token = yield Token.findOne({
             userId: user._id,
             token: req.params.token
@@ -114,6 +117,7 @@ const getUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("hello");
     const user = yield User.findOne({ email: req.body.email });
     if (!user) {
         return res.status(404).send({ message: 'user not found' });
@@ -122,7 +126,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).send({ message: "Password is incorrect" });
     }
     const token = jwt.sign({ _id: user._id }, "secret");
-    res.cookie("userReg", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 100 });
+    res.cookie("userRegx", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 100 });
     res.send({ message: "success" });
 });
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
