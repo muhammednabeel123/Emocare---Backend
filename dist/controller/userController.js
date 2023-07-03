@@ -156,7 +156,8 @@ while (startTime.isBefore(endTime, 'hour')) {
     const slot = {
         startTime: startTime.format('hh:mm A'),
         booked: false,
-        expired: false
+        expired: false,
+        servicer: null
     };
     slotes.push(slot);
     startTime.add(slotDuration, 'hours');
@@ -176,26 +177,35 @@ const bookSlot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const slot = slotes[slotId];
         const customer = yield User.findOne({ _id: userId });
         const counselor = yield Counselor.findOne({ _id: serviceId });
+        const timeString = slot.startTime;
+        const date = new Date();
+        const timeComponents = timeString.split(':');
+        const hour = parseInt(timeComponents[0]);
+        const minute = parseInt(timeComponents[1].split(' ')[0]);
+        date.setHours(hour);
+        date.setMinutes(minute);
+        console.log(date);
+        const timestamp = date.getTime();
         const booking = new Appointment({
             user: customer._id,
             counselor: counselor._id,
             service: counselor.service,
             booked: true,
-            consultingTime: slot.startTime,
+            consultingTime: date,
             date: new Date()
         });
         const result = yield booking.save();
         console.log(result);
-        console.log(slot, "theree  is an erro");
-        if (!slot || slot.booked || slot.expired) {
+        if (!slot || slot.booked || slot.expired || slot.servicer) {
             res.status(400).send({ error: 'Invalid or unavailable slot' });
         }
         else {
             slot.booked = true;
-            // Expire the slot after 1 hour
+            slot.servicer = result.counselor;
+            console.log(slot, "theree  is an erro");
             setTimeout(() => {
                 slot.expired = true;
-            }, 60 * 60 * 1000); // 1 hour in milliseconds
+            }, 60 * 60 * 1000);
             res.json({ message: 'Slot booked successfully' });
         }
     }

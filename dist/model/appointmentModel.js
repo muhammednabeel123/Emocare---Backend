@@ -5,7 +5,7 @@ const A_mongoose = new a_mongoose.Schema({
     counselor: { type: Schema.Types.ObjectId, required: true, ref: 'Counselor', },
     service: { type: Schema.Types.ObjectId, required: true, ref: 'Service' },
     booked: { type: Boolean, default: false },
-    consultingTime: { type: String, default: 0 },
+    consultingTime: { type: Date },
     date: Date,
     expired: { type: Boolean }
 });
