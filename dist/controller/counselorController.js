@@ -54,6 +54,7 @@ const signup = (req, res) => __awaiter(this, void 0, void 0, function* () {
 });
 const getServices = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
+        console.log("hey");
         const services = yield Services.find({});
         res.send(services);
     }

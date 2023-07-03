@@ -258,8 +258,6 @@ const getCookie = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("reaching");
-    debugger;
     res.cookie("adminLog", "", { maxAge: 0 });
     res.send({
         message: "success"

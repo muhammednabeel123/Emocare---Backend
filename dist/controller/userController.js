@@ -140,7 +140,6 @@ const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 const servicesById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const counselors = yield Counselor.find({ service: req.params.id });
-        // Assuming you are using Express.js
         res.send(counselors);
     }
     catch (error) {
@@ -148,8 +147,8 @@ const servicesById = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 const slotes = [];
-const startTime = moment().startOf('day').hour(0);
-const endTime = moment().startOf('day').add(27, 'hours');
+const startTime = moment().startOf('day').hour(9);
+const endTime = moment().startOf('day').hour(17);
 const slotDuration = 1; // in hours
 while (startTime.isBefore(endTime, 'hour')) {
     const currentTime = moment();
@@ -157,14 +156,14 @@ while (startTime.isBefore(endTime, 'hour')) {
     const slot = {
         startTime: startTime.format('hh:mm A'),
         booked: false,
-        expired: currentTime.isAfter(slotTime)
+        expired: false
     };
     slotes.push(slot);
     startTime.add(slotDuration, 'hours');
 }
 const slots = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const availableSlots = slotes.filter(slot => !slot.booked && !slot.expired);
+        const availableSlots = slotes;
         res.json(availableSlots);
     }
     catch (error) {
@@ -173,8 +172,21 @@ const slots = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const bookSlot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const slotId = req.params.slotId;
+        const { slotId, serviceId, userId } = req.params;
         const slot = slotes[slotId];
+        const customer = yield User.findOne({ _id: userId });
+        const counselor = yield Counselor.findOne({ _id: serviceId });
+        const booking = new Appointment({
+            user: customer._id,
+            counselor: counselor._id,
+            service: counselor.service,
+            booked: true,
+            consultingTime: slot.startTime,
+            date: new Date()
+        });
+        const result = yield booking.save();
+        console.log(result);
+        console.log(slot, "theree  is an erro");
         if (!slot || slot.booked || slot.expired) {
             res.status(400).send({ error: 'Invalid or unavailable slot' });
         }

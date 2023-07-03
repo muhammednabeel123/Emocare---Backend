@@ -73,6 +73,9 @@ const signup = async (req,res) => {
 
 const getServices = async(req,res)=>{
     try {
+
+        console.log("hey");
+        
         const services = await Services.find({})
        
         res.send(services)

@@ -283,8 +283,8 @@ const getCookie = async (req, res) => {
     }
   };
   const logout = async (req, res) => {
-    console.log("reaching");
-    debugger
+
+   
   
     res.cookie("adminLog", "", { maxAge: 0 })
     res.send({

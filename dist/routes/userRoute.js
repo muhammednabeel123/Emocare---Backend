@@ -10,5 +10,5 @@ router.get('/user/:id/verify/:token', userController.mailVerify);
 router.get('/servicer/:id', userController.getServicer);
 router.get('/slots', userController.slots);
 router.get('/date', userController.getDate);
-router.post('/book/:slotId', userController.bookSlot);
+router.post('/book/:slotId/:serviceId/:userId', userController.bookSlot);
 module.exports = router;

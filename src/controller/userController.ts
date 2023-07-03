@@ -158,7 +158,7 @@ const servicesById = async(req,res)=>{
 
         const counselors = await Counselor.find({ service: req.params.id });
 
-        // Assuming you are using Express.js
+   
         res.send(counselors);
         
     } catch (error) {
@@ -168,8 +168,8 @@ const servicesById = async(req,res)=>{
 }
 
 const slotes = [];
-const startTime = moment().startOf('day').hour(0);
-const endTime = moment().startOf('day').add(27, 'hours');
+const startTime = moment().startOf('day').hour(9);
+const endTime = moment().startOf('day').hour(17);
 
 const slotDuration = 1; // in hours
 
@@ -180,7 +180,7 @@ while (startTime.isBefore(endTime, 'hour')) {
   const slot = {
     startTime: startTime.format('hh:mm A'),
     booked: false,
-    expired: currentTime.isAfter(slotTime)
+    expired: false
   };
   slotes.push(slot);
 
@@ -190,7 +190,7 @@ while (startTime.isBefore(endTime, 'hour')) {
 const slots = async (req, res) => {
   try {
 
-    const availableSlots = slotes.filter(slot => !slot.booked && !slot.expired);
+    const availableSlots = slotes
     res.json(availableSlots);
   } catch (error) {
     console.log(error);
@@ -199,8 +199,28 @@ const slots = async (req, res) => {
 
 const bookSlot = async (req, res) => {
   try {
-    const slotId = req.params.slotId;
+    const { slotId, serviceId, userId } = req.params;
     const slot = slotes[slotId];
+    const customer = await User.findOne({_id:userId})
+    const counselor = await Counselor.findOne({_id:serviceId})
+
+    const booking = new Appointment({
+        user:customer._id,
+        counselor:counselor._id,
+        service:counselor.service,
+        booked:true,
+        consultingTime:slot.startTime,
+        date:new Date()
+    }) 
+    const result = await booking.save()
+
+    console.log(result);
+    
+
+  
+  
+    console.log(slot,"theree  is an erro");
+    
 
     if (!slot || slot.booked || slot.expired) {
       res.status(400).send({ error: 'Invalid or unavailable slot' });
@@ -219,6 +239,14 @@ const bookSlot = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
+
+
+
+
+
+
 
 const getDate = async(req,res) =>{
     try {
