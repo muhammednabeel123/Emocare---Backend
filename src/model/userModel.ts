@@ -14,11 +14,12 @@ const userSchema = new mongoos.Schema({
         type:String,
         required:true
     },
-    verfied:{
+    verified:{
        type:Boolean
     },
     is_blocked:{
-        type:Boolean
+        type:Boolean,
+        default:false
     }
 
 })

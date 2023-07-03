@@ -3,6 +3,11 @@ const jwt = require('jsonwebtoken')
 const User = require('../model/userModel')
 const Token = require('../model/tokenModel')
 const SendEmail = require("../utilities/sendmail")
+const Counselor = require('../model/counselorModel')
+const moment = require('moment');
+const Appointment = require('../model/appointmentModel')
+
+
 const cryptos = require("crypto")
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -32,8 +37,9 @@ const userRegistration = async (req, res) => {
                 userId: result._id,
                 token: cryptos.randomBytes(32).toString("hex")
             }).save()
-            const url = `${process.env.BASE_URL2}user/${user._id}/verify/${emailtoken.token}`
-            await SendEmail(user.email, "verify email", url)
+        
+            const url = `${process.env.BASE_URL2}user/${result._id}/verify/${emailtoken.token}`
+            await SendEmail(user.email, "verify email",name,password, url)
             const { _id } = await result.toJSON()
             res.status(201).send({
                 message: "mail sented",
@@ -41,12 +47,7 @@ const userRegistration = async (req, res) => {
                 userId: user._id
             });
 
-            // jwt token
-
-
-            // res.send({
-            //     message:"success"
-            // })  
+            
         }
 
 
@@ -59,12 +60,13 @@ const userRegistration = async (req, res) => {
 
 const mailVerify = async (req, res) => {
     try {
-   
-        const user = await User.findOne({ _id:req.params._id });
-        console.log(user._id, "ther");
+    
+        
+        const user = await User.findOne({ _id:req.params.id });
+        console.log(user, "ther");
 
         if (!user) return res.status(404).send({ message: "Invalid link" })
-        const tokens = jwt.sign({ _id: req.params._id }, "secret")
+        const tokens = jwt.sign({ _id: req.params.id }, "secret")
 
         res.cookie("userRegi", tokens, {
             httpOnly: true,
@@ -95,6 +97,7 @@ const getUser = async (req, res) => {
 
     try {
    
+    
         
         const cookie = req.cookies['userReg']
         const claims = jwt.verify(cookie, "secret")
@@ -104,11 +107,12 @@ const getUser = async (req, res) => {
             })
         }
         const user = await User.findOne({ _id: claims._id })
+      
         const { password, ...data } = await user.toJSON()
-        res.send(data)
+        res.status(200).send(data)
 
     } catch (error) {
-        console.log("anything here");
+        console.log(error);
 
         return res.status(401).send({
             message: 'unauthenticated'
@@ -119,29 +123,139 @@ const getUser = async (req, res) => {
 }
 
 const login = async (req, res) => {
-    console.log("hello");
+    const user = await User.findOne({ email: req.body.email });
+    console.log("hey");
     
-    const user = await User.findOne({ email: req.body.email })
+    
     if (!user) {
-        return res.status(404).send({ message: 'user not found' })
+      return res.status(404).send({ message: 'User not found' });
     }
+    if (user.is_blocked) {
+      return res.status(400).send({ message: 'Forbidden' });
+    }
+  
     if (!(await bcrypt.compare(req.body.password, user.password))) {
-        return res.status(400).send({ message: "Password is incorrect" })
+      return res.status(400).send({ message: 'Password is incorrect' });
     }
-    const token = jwt.sign({ _id: user._id }, "secret")
-    res.cookie("userRegx", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 100 })
-    res.send({ message: "success" })
-}
+  
+    const token = jwt.sign({ _id: user._id }, 'secret');
+    res.cookie('userReg', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 100 });
+  
+    res.status(200).send({ message: 'Login successful',token: token });
+  };
 
 const logout = async (req, res) => {
+  
+    
     res.cookie("userReg", "", { maxAge: 0 })
     res.send({
         message: "success"
     })
 
 }
+const servicesById = async(req,res)=>{
+    try {
+
+        const counselors = await Counselor.find({ service: req.params.id });
+
+        // Assuming you are using Express.js
+        res.send(counselors);
+        
+    } catch (error) {
+        console.log(error);
+                
+    }
+}
+
+const slotes = [];
+const startTime = moment().startOf('day').hour(0);
+const endTime = moment().startOf('day').add(27, 'hours');
+
+const slotDuration = 1; // in hours
+
+while (startTime.isBefore(endTime, 'hour')) {
+    const currentTime = moment();
+    const slotTime = moment(startTime);
+
+  const slot = {
+    startTime: startTime.format('hh:mm A'),
+    booked: false,
+    expired: currentTime.isAfter(slotTime)
+  };
+  slotes.push(slot);
+
+  startTime.add(slotDuration, 'hours');
+}
+
+const slots = async (req, res) => {
+  try {
+
+    const availableSlots = slotes.filter(slot => !slot.booked && !slot.expired);
+    res.json(availableSlots);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const bookSlot = async (req, res) => {
+  try {
+    const slotId = req.params.slotId;
+    const slot = slotes[slotId];
+
+    if (!slot || slot.booked || slot.expired) {
+      res.status(400).send({ error: 'Invalid or unavailable slot' });
+    } else {
+      slot.booked = true;
+
+      // Expire the slot after 1 hour
+      setTimeout(() => {
+        slot.expired = true;
+      }, 60 * 60 * 1000); // 1 hour in milliseconds
+
+      res.json({ message: 'Slot booked successfully' });
+    }
+  } catch (error) {
+    console.log(error,);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const getDate = async(req,res) =>{
+    try {
+        const currentDate = moment().format('YYYY-MM-DD');
+        res.json({date:currentDate})
+
+    } catch (error) {
+        console.log(error);
+        
+    }
+}
+
+const getServicer = async(req,res)=>{
+    try {
+        const cookie = req.cookies['userReg']
+        const claims = jwt.verify(cookie, "secret")
+        if (!claims) {
+            return res.status(401).send({
+                message: "unauthenticated"
+            })
+        }else{
+              const servicer = await Counselor.findById({_id:req.params.id}).populate('service')
+              res.json(servicer)
+              
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'An error occurred' });
+        console.log(error);
+        
+    }
+}
+
+
+
+
 
 module.exports = {
     userRegistration,
-    getUser, logout, login, mailVerify
+    getUser, logout, login, mailVerify,servicesById,slots,bookSlot,getServicer,getDate
 }

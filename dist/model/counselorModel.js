@@ -1,5 +1,5 @@
 const c_mongoose = require('mongoose');
-const Schemas = c_mongoose.Schema;
+const Schema = c_mongoose.Schema;
 const C_schema = new c_mongoose.Schema({
     name: {
         type: String,
@@ -26,11 +26,16 @@ const C_schema = new c_mongoose.Schema({
         type: Number
     },
     id_proof: {
-        type: Array,
-        default: "hello"
+        type: String,
+    },
+    id_proofPublicId: {
+        type: String
     },
     certificates: {
-        type: Array
+        type: String
+    },
+    certificatesPublicId: {
+        type: String
     },
     age: {
         type: Number
@@ -38,6 +43,14 @@ const C_schema = new c_mongoose.Schema({
     is_verified: {
         type: Boolean,
         default: false
+    },
+    is_Blocked: {
+        type: Boolean,
+        default: false
+    },
+    service: {
+        type: Schema.Types.ObjectId,
+        ref: "Service",
     }
 });
-module.exports = c_mongoose.model("counselor", C_schema);
+module.exports = c_mongoose.model("Counselor", C_schema);
