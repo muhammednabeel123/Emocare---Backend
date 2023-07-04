@@ -7,11 +7,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 const Counselor = require('../model/counselorModel');
 const Services = require('../model/serviceModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Token = require('../model/tokenModel');
+const Appointment = require('../model/appointmentModel');
 const { uploadToCloudinary, removeFromCloudinary } = require('../middlewears/cloudinary');
 //  COUNSELOR SIGNUP
 const signup = (req, res) => __awaiter(this, void 0, void 0, function* () {
@@ -54,7 +66,6 @@ const signup = (req, res) => __awaiter(this, void 0, void 0, function* () {
 });
 const getServices = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
-        console.log("hey");
         const services = yield Services.find({});
         res.send(services);
     }
@@ -69,6 +80,9 @@ const counselorLogin = (req, res) => __awaiter(this, void 0, void 0, function* (
         if (!user) {
             return res.status(404).send({ message: 'user not found' });
         }
+        if (user.is_Blocked) {
+            return res.status(400).send({ message: 'Forbidden' });
+        }
         if (!(yield bcrypt.compare(req.body.password, user.password))) {
             return res.status(400).send({ message: "Password is incorrect" });
         }
@@ -81,6 +95,47 @@ const counselorLogin = (req, res) => __awaiter(this, void 0, void 0, function* (
         res.status(500).send({ message: "Internals Server Error" });
     }
 });
+const getCounselor = (req, res) => __awaiter(this, void 0, void 0, function* () {
+    try {
+        const cookie = req.cookies['C-Logged'];
+        const claims = jwt.verify(cookie, "secret");
+        if (!claims) {
+            return res.status(401).send({
+                message: "unauthenticated"
+            });
+        }
+        const user = yield Counselor.findOne({ _id: claims._id });
+        const _a = yield user.toJSON(), { password } = _a, data = __rest(_a, ["password"]);
+        res.status(200).send(data);
+    }
+    catch (error) {
+        console.log(error);
+    }
+});
+const getAppointment = (req, res) => __awaiter(this, void 0, void 0, function* () {
+    try {
+        console.log("here");
+        const cookie = req.cookies['C-Logged'];
+        const claims = jwt.verify(cookie, "secret");
+        if (!claims) {
+            return res.status(401).send({
+                message: "unauthenticated"
+            });
+        }
+        const appointments = yield Appointment.find({ counselor: claims._id }).populate('user').sort({ consultingTime: -1 });
+        console.log(appointments);
+        res.json(appointments);
+    }
+    catch (error) {
+        console.log(error);
+    }
+});
+const logout = (req, res) => __awaiter(this, void 0, void 0, function* () {
+    res.cookie("C-Logged", "", { maxAge: 0 });
+    res.send({
+        message: "success"
+    });
+});
 module.exports = {
-    signup, getServices, counselorLogin
+    signup, getServices, counselorLogin, getCounselor, logout, getAppointment
 };

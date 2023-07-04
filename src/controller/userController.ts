@@ -171,7 +171,7 @@ const slotes = [];
 
 
 const startTime = moment().startOf('day').hour(9);
-const endTime = moment().startOf('day').hour(17);
+const endTime = moment().startOf('day').hour(24);
 
 const slotDuration = 1; // in hours
 
@@ -206,19 +206,41 @@ const bookSlot = async (req, res) => {
     const slot = slotes[slotId];
     const customer = await User.findOne({_id:userId})
     const counselor = await Counselor.findOne({_id:serviceId})
+    
     const timeString = slot.startTime;
     const date = new Date();
     const timeComponents = timeString.split(':');
-    const hour = parseInt(timeComponents[0]);
+    let hour = parseInt(timeComponents[0]);
     const minute = parseInt(timeComponents[1].split(' ')[0]);
+    const period = timeComponents[1].split(' ')[1].toUpperCase();
 
-    date.setHours(hour);
-    date.setMinutes(minute);
-    console.log(date);
-   
-    const timestamp = date.getTime();
-  
-    
+
+if (period === 'PM' && hour !== 12) {
+  hour += 12;
+} else if (period === 'AM' && hour === 12) {
+  hour = 0;
+}
+
+
+date.setHours(hour);
+date.setMinutes(minute);
+
+
+const indianTime = date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+const indianDate = new Date(indianTime);
+
+
+const hour24 = indianDate.getHours();
+const minutes = indianDate.getMinutes();
+
+
+const formattedTime = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+
+
+const formattedDateTime = new Date();
+formattedDateTime.setHours(hour24);
+formattedDateTime.setMinutes(minutes);
+formattedDateTime.setSeconds(0); 
 
 
     const booking = new Appointment({
@@ -226,7 +248,7 @@ const bookSlot = async (req, res) => {
         counselor:counselor._id,
         service:counselor.service,
         booked:true,
-        consultingTime:date,
+        consultingTime:formattedDateTime,
         date:new Date()
     }) 
     const result = await booking.save()
