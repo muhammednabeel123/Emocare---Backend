@@ -149,7 +149,7 @@ const servicesById = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 const slotes = [];
 const startTime = moment().startOf('day').hour(9);
 const endTime = moment().startOf('day').hour(24);
-const slotDuration = 1; // in hours
+const slotDuration = 1;
 while (startTime.isBefore(endTime, 'hour')) {
     const currentTime = moment();
     const slotTime = moment(startTime);
