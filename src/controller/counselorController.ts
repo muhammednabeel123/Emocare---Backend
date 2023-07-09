@@ -149,7 +149,7 @@ const getAppointment = async(req,res)=>{
                 message: "unauthenticated"
             })
         }
-        const appointments = await Appointment.find({ counselor: claims._id }).populate('user').sort({ consultingTime: -1 });
+        const appointments = await Appointment.find({ counselor: claims._id }).populate('user').sort({ consultingTime: 1 });
          console.log(appointments);
         res.json(appointments);
         

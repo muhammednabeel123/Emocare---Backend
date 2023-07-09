@@ -11,4 +11,5 @@ router.get('/servicer/:id', userController.getServicer);
 router.get('/slots', userController.slots);
 router.get('/date', userController.getDate);
 router.post('/book/:slotId/:serviceId/:userId', userController.bookSlot);
+router.get("/appointments", userController.getAppointment);
 module.exports = router;

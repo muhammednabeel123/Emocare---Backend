@@ -256,7 +256,25 @@ const getServicer = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         console.log(error);
     }
 });
+const getAppointment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        console.log("here");
+        const cookie = req.cookies['userReg'];
+        const claims = jwt.verify(cookie, "secret");
+        if (!claims) {
+            return res.status(401).send({
+                message: "unauthenticated"
+            });
+        }
+        const appointments = yield Appointment.find({ user: claims._id }).populate('user').sort({ consultingTime: 1 });
+        console.log(appointments);
+        res.json(appointments);
+    }
+    catch (error) {
+        console.log(error);
+    }
+});
 module.exports = {
     userRegistration,
-    getUser, logout, login, mailVerify, servicesById, slots, bookSlot, getServicer, getDate
+    getUser, logout, login, mailVerify, servicesById, slots, bookSlot, getServicer, getDate, getAppointment
 };

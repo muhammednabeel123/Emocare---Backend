@@ -122,7 +122,7 @@ const getAppointment = (req, res) => __awaiter(this, void 0, void 0, function* (
                 message: "unauthenticated"
             });
         }
-        const appointments = yield Appointment.find({ counselor: claims._id }).populate('user').sort({ consultingTime: -1 });
+        const appointments = yield Appointment.find({ counselor: claims._id }).populate('user').sort({ consultingTime: 1 });
         console.log(appointments);
         res.json(appointments);
     }
